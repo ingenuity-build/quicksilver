@@ -118,6 +118,7 @@ import (
 	interchainquerytypes "github.com/ingenuity-build/quicksilver/x/interchainquery/types"
 
 	"github.com/ingenuity-build/quicksilver/x/participationrewards"
+	interchainstakingclient "github.com/ingenuity-build/quicksilver/x/participationrewards/client"
 	participationrewardskeeper "github.com/ingenuity-build/quicksilver/x/participationrewards/keeper"
 	participationrewardstypes "github.com/ingenuity-build/quicksilver/x/participationrewards/types"
 
@@ -158,9 +159,10 @@ var (
 		mint.AppModuleBasic{},
 		gov.NewAppModuleBasic(
 			paramsclient.ProposalHandler, distrclient.ProposalHandler, upgradeclient.ProposalHandler, upgradeclient.CancelProposalHandler,
-			ibcclientclient.UpdateClientProposalHandler, ibcclientclient.UpgradeProposalHandler, interchainstakingclient.RegisterProposalHandler,
-			interchainstakingclient.UpdateProposalHandler,
+			ibcclientclient.UpdateClientProposalHandler, ibcclientclient.UpgradeProposalHandler,
 			// Custom proposal types
+			interchainstakingclient.RegisterProposalHandler, interchainstakingclient.UpdateProposalHandler,
+			participationrewardsclient.AddProtocolDataProposal,
 		),
 		params.AppModuleBasic{},
 		crisis.AppModuleBasic{},
@@ -502,7 +504,8 @@ func NewQuicksilver(
 		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
 		AddRoute(ibchost.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
-		AddRoute(interchainstakingtypes.RouterKey, interchainstaking.NewProposalHandler(app.InterchainstakingKeeper))
+		AddRoute(interchainstakingtypes.RouterKey, interchainstaking.NewProposalHandler(app.InterchainstakingKeeper)).
+		AddRoute(participationrewardstypes.RouterKey, participationrewards.NewProposalHandler(app.ParticipationRewardsKeeper))
 	// add custom proposal routes here.
 
 	govKeeper := govkeeper.NewKeeper(
