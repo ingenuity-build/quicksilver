@@ -6,16 +6,17 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	//lint:ignore SA1019 ignore this!
 	"github.com/golang/protobuf/proto"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
-	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
-	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
-	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+	icatypes "github.com/cosmos/ibc-go/v4/modules/apps/27-interchain-accounts/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
+	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -23,8 +24,6 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	queryTypes "github.com/ingenuity-build/quicksilver/x/interchainquery/types"
 	"github.com/ingenuity-build/quicksilver/x/interchainstaking/types"
-
-	"time"
 )
 
 func (k *Keeper) HandleAcknowledgement(ctx sdk.Context, packet channeltypes.Packet, acknowledgement []byte) error {
@@ -296,7 +295,6 @@ func (k *Keeper) HandleCompleteSend(ctx sdk.Context, msg sdk.Msg, memo string) e
 		k.Logger(ctx).Error(err.Error())
 		return err
 	}
-
 }
 
 func (k *Keeper) handleRewardsDelegation(ctx sdk.Context, zone types.RegisteredZone, msg *banktypes.MsgSend) error {
@@ -485,7 +483,6 @@ func (k *Keeper) GetValidatorForToken(ctx sdk.Context, delegatorAddress string, 
 	}
 
 	return "", fmt.Errorf("unable to find validator for token %s", amount.Denom)
-
 }
 
 func parseDelegationKey(key []byte) ([]byte, []byte, error) {
@@ -494,7 +491,7 @@ func parseDelegationKey(key []byte) ([]byte, []byte, error) {
 	}
 	delAddrLen := key[1]
 	delAddr := key[2:delAddrLen]
-	//valAddrLen := key[2+delAddrLen]
+	// valAddrLen := key[2+delAddrLen]
 	valAddr := key[3+delAddrLen:]
 	return delAddr, valAddr, nil
 }
@@ -578,7 +575,6 @@ func (k *Keeper) UpdateDelegationRecordsForAddress(ctx sdk.Context, zone *types.
 }
 
 func (k *Keeper) UpdateDelegationRecordForAddress(ctx sdk.Context, delegatorAddress string, validatorAddress string, amount sdk.Coin, zone *types.RegisteredZone, absolute bool) error {
-
 	delegation, found := k.GetDelegation(ctx, zone, delegatorAddress, validatorAddress)
 	da, _ := zone.GetDelegationAccountByAddress(delegatorAddress)
 
@@ -587,7 +583,7 @@ func (k *Keeper) UpdateDelegationRecordForAddress(ctx sdk.Context, delegatorAddr
 		delegation = types.NewDelegation(delegatorAddress, validatorAddress, amount)
 		da.DelegatedBalance = da.DelegatedBalance.Add(amount)
 	} else {
-		if !delegation.Amount.Equal(amount.Amount.ToDec()) {
+		if !delegation.Amount.Equal(sdk.NewDecFromInt(amount.Amount)) {
 			oldAmount := delegation.Amount
 			if !absolute {
 				da.DelegatedBalance = da.DelegatedBalance.Add(amount)
@@ -667,7 +663,7 @@ func DistributeRewardsFromWithdrawAccount(k Keeper, ctx sdk.Context, args []byte
 	baseDenomAmount := withdrawBalance.Balances.AmountOf(zone.BaseDenom)
 	// calculate fee (fee = amount * rate)
 
-	baseDenomFee := baseDenomAmount.ToDec().
+	baseDenomFee := sdk.NewDecFromInt(baseDenomAmount).
 		Mul(k.GetCommissionRate(ctx)).
 		TruncateInt()
 
@@ -680,7 +676,7 @@ func DistributeRewardsFromWithdrawAccount(k Keeper, ctx sdk.Context, args []byte
 	rewards = rewards.SubAmount(dust)
 
 	// multiDenomFee is the balance of withdrawal account minus the redelegated rewards.
-	multiDenomFee := withdrawBalance.Balances.Sub(sdk.Coins{rewards})
+	multiDenomFee := withdrawBalance.Balances.Sub(sdk.Coins{rewards}...)
 
 	channelReq := channeltypes.QueryConnectionChannelsRequest{Connection: zone.ConnectionId}
 	localChannelResp, err := k.IBCKeeper.ChannelKeeper.ConnectionChannels(sdk.WrapSDKContext(ctx), &channelReq)
@@ -720,15 +716,14 @@ func DistributeRewardsFromWithdrawAccount(k Keeper, ctx sdk.Context, args []byte
 
 	// send tx
 	return k.SubmitTx(ctx, msgs, zone.WithdrawalAddress, "")
-
 }
 
 func (k *Keeper) updateRedemptionRate(ctx sdk.Context, zone types.RegisteredZone, epochRewards sdk.Coin) {
-	ratio := zone.GetDelegatedAmount().Add(epochRewards).Amount.ToDec().Quo(k.BankKeeper.GetSupply(ctx, zone.LocalDenom).Amount.ToDec())
+	ratio := sdk.NewDecFromInt(zone.GetDelegatedAmount().Add(epochRewards).Amount).Quo(sdk.NewDecFromInt(k.BankKeeper.GetSupply(ctx, zone.LocalDenom).Amount))
 	k.Logger(ctx).Info("Epochly rewards", "coins", epochRewards)
 	k.Logger(ctx).Info("Last redemption rate", "rate", zone.LastRedemptionRate)
 	k.Logger(ctx).Info("Current redemption rate", "rate", zone.RedemptionRate)
-	k.Logger(ctx).Info("New redemption rate", "rate", ratio, "supply", k.BankKeeper.GetSupply(ctx, zone.LocalDenom).Amount.ToDec(), "lv", zone.GetDelegatedAmount().Add(epochRewards).Amount.ToDec())
+	k.Logger(ctx).Info("New redemption rate", "rate", ratio, "supply", sdk.NewDecFromInt(k.BankKeeper.GetSupply(ctx, zone.LocalDenom).Amount), "lv", sdk.NewDecFromInt(zone.GetDelegatedAmount().Add(epochRewards).Amount))
 
 	zone.LastRedemptionRate = zone.RedemptionRate
 	zone.RedemptionRate = ratio
@@ -741,7 +736,7 @@ func (k *Keeper) prepareRewardsDistributionMsgs(ctx sdk.Context, zone types.Regi
 	var msgs []sdk.Msg
 
 	dust := rewards.Amount
-	portion := rewards.Amount.ToDec().Quo(sdk.NewDec(int64(len(zone.DelegationAddresses)))).TruncateInt()
+	portion := sdk.NewDecFromInt(rewards.Amount).Quo(sdk.NewDec(int64(len(zone.DelegationAddresses)))).TruncateInt()
 	for _, da := range zone.GetDelegationAccounts() {
 		msgs = append(
 			msgs,

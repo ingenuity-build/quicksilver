@@ -4,13 +4,12 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
+	icatypes "github.com/cosmos/ibc-go/v4/modules/apps/27-interchain-accounts/types"
 	"github.com/ingenuity-build/quicksilver/x/interchainstaking/types"
 )
 
 // HandleRegisterZoneProposal is a handler for executing a passed community spend proposal
 func HandleRegisterZoneProposal(ctx sdk.Context, k Keeper, p *types.RegisterZoneProposal) error {
-
 	// get chain id from connection
 	chainId, err := k.GetChainID(ctx, p.ConnectionId)
 	if err != nil {
@@ -83,7 +82,14 @@ func HandleRegisterZoneProposal(ctx sdk.Context, k Keeper, p *types.RegisterZone
 }
 
 func (k Keeper) registerInterchainAccount(ctx sdk.Context, connectionId string, portOwner string) error {
-	if err := k.ICAControllerKeeper.RegisterInterchainAccount(ctx, connectionId, portOwner); err != nil {
+	version := string(icatypes.ModuleCdc.MustMarshalJSON(&icatypes.Metadata{
+		Version:                icatypes.Version,
+		ControllerConnectionId: "connection-0",
+		HostConnectionId:       "connection-0",
+		Encoding:               icatypes.EncodingProtobuf,
+		TxType:                 icatypes.TxTypeSDKMultiMsg,
+	}))
+	if err := k.ICAControllerKeeper.RegisterInterchainAccount(ctx, connectionId, portOwner, version); err != nil {
 		return err
 	}
 	portId, _ := icatypes.NewControllerPortID(portOwner)
