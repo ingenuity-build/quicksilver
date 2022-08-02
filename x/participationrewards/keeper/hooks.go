@@ -10,6 +10,12 @@ func (k Keeper) BeforeEpochStart(ctx sdk.Context, epochIdentifier string, epochN
 }
 
 func (k Keeper) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumber int64) {
+
+	k.Logger(ctx).Info("Triggering submodule hooks")
+	for _, sub := range k.prSubmodules {
+		sub.Hooks(ctx, k)
+	}
+
 	k.Logger(ctx).Info("distribute participation rewards...")
 
 	allocation := k.getRewardsAllocations(ctx)

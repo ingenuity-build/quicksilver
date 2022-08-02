@@ -118,7 +118,7 @@ import (
 	interchainquerytypes "github.com/ingenuity-build/quicksilver/x/interchainquery/types"
 
 	"github.com/ingenuity-build/quicksilver/x/participationrewards"
-	interchainstakingclient "github.com/ingenuity-build/quicksilver/x/participationrewards/client"
+	participationrewardsclient "github.com/ingenuity-build/quicksilver/x/participationrewards/client"
 	participationrewardskeeper "github.com/ingenuity-build/quicksilver/x/participationrewards/keeper"
 	participationrewardstypes "github.com/ingenuity-build/quicksilver/x/participationrewards/types"
 
@@ -162,7 +162,7 @@ var (
 			ibcclientclient.UpdateClientProposalHandler, ibcclientclient.UpgradeProposalHandler,
 			// Custom proposal types
 			interchainstakingclient.RegisterProposalHandler, interchainstakingclient.UpdateProposalHandler,
-			participationrewardsclient.AddProtocolDataProposal,
+			participationrewardsclient.AddProtocolDataProposalHandler,
 		),
 		params.AppModuleBasic{},
 		crisis.AppModuleBasic{},
@@ -477,6 +477,8 @@ func NewQuicksilver(
 			app.ParticipationRewardsKeeper.Hooks(),
 		),
 	)
+
+	app.ParticipationRewardsKeeper.SetEpochsKeeper(app.EpochsKeeper)
 
 	icaControllerIBCModule := icacontroller.NewIBCModule(app.ICAControllerKeeper, interchainstakingIBCModule)
 	icaHostIBCModule := icahost.NewIBCModule(app.ICAHostKeeper)

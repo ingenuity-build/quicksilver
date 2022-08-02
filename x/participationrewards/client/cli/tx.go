@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -8,7 +9,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-
+	"github.com/cosmos/cosmos-sdk/codec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ingenuity-build/quicksilver/x/participationrewards/types"
 )
 
@@ -69,6 +72,7 @@ Where proposal.json contains:
   "description": "Add Osmosis Atom/qAtom Pool to support participation rewards",
   "protocol": "osmosis",
   "key": "pools/XXX",
+  "type": "osmosispool",
   "data": {
 	"poolId": "596",
 	"ibcToken": "27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
@@ -96,7 +100,7 @@ Where proposal.json contains:
 
 			from := clientCtx.GetFromAddress()
 
-			content := types.NewAddProtocolDataProposal(proposal.Title, proposal.Description, proposal.Protocol, proposal.Key,
+			content := types.NewAddProtocolDataProposal(proposal.Title, proposal.Description, proposal.Type, proposal.Protocol, proposal.Key,
 				proposal.Data)
 
 			msg, err := govtypes.NewMsgSubmitProposal(content, deposit, from)
@@ -109,4 +113,19 @@ Where proposal.json contains:
 	}
 
 	return cmd
+}
+
+func ParseAddProtocolDataProposal(cdc codec.JSONCodec, proposalFile string) (types.AddProtocolDataProposalWithDeposit, error) {
+	proposal := types.AddProtocolDataProposalWithDeposit{}
+
+	contents, err := os.ReadFile(proposalFile)
+	if err != nil {
+		return proposal, err
+	}
+
+	if err = cdc.UnmarshalJSON(contents, &proposal); err != nil {
+		return proposal, err
+	}
+
+	return proposal, nil
 }

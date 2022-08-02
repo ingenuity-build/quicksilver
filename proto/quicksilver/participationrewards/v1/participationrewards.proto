@@ -38,5 +38,6 @@ message Params {
 
 message ProtocolData {
   string protocol = 1;
-  string data = 2;
+  string type = 2;
+  bytes data = 3 [ (gogoproto.casttype) = "encoding/json.RawMessage" ];
 }

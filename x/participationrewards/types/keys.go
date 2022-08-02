@@ -10,3 +10,7 @@ const (
 	// RouterKey is the message route for participationrewards
 	RouterKey = ModuleName
 )
+
+var (
+	KeyPrefixProtocolData = []byte{0x01}
+)

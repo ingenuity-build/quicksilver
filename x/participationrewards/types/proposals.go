@@ -1,6 +1,7 @@
 package types
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -13,8 +14,8 @@ const (
 
 var _ govtypes.Content = &AddProtocolDataProposal{}
 
-func NewAddProtocolDataProposal(title string, description string, protocol string, key string, data string) *AddProtocolDataProposal {
-	return &AddProtocolDataProposal{Title: title, Description: description, Protocol: protocol, Key: key, Data: data}
+func NewAddProtocolDataProposal(title string, description string, datatype string, protocol string, key string, data json.RawMessage) *AddProtocolDataProposal {
+	return &AddProtocolDataProposal{Title: title, Description: description, Type: datatype, Protocol: protocol, Key: key, Data: data}
 }
 
 func (m AddProtocolDataProposal) GetDescription() string { return m.Description }
@@ -39,8 +40,9 @@ func (m AddProtocolDataProposal) String() string {
   Title:                            %s
   Description:                      %s
   Protocol:                         %s
+  Type:						 %s
   Key:                       %s
   Data:                      %s
-`, m.Title, m.Description, m.Protocol, m.Key, m.Data))
+`, m.Title, m.Description, m.Protocol, m.Type, m.Key, m.Data))
 	return b.String()
 }

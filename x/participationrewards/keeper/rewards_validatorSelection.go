@@ -52,7 +52,7 @@ func (k Keeper) allocateValidatorSelectionRewards(ctx sdk.Context) {
 		rewardsQuery := distrtypes.QueryDelegationTotalRewardsRequest{DelegatorAddress: zone.PerformanceAddress.GetAddress()}
 		bz := k.cdc.MustMarshal(&rewardsQuery)
 
-		k.icqKeeper.MakeRequest(
+		k.IcqKeeper.MakeRequest(
 			ctx,
 			zone.ConnectionId,
 			zone.ChainId,
@@ -272,6 +272,7 @@ func (k Keeper) calcUserValidatorSelectionAllocations(
 				if !vs.Score.IsNil() {
 					score = intent.Weight.Mul(vs.Score)
 				}
+
 			}
 			k.Logger(ctx).Info("user score for validator", "user", di.GetDelegator(), "validator", intent.ValoperAddress, "score", score)
 			uSum = uSum.Add(score)
